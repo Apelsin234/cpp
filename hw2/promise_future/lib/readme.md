@@ -1,2 +1,2 @@
-В эту папку поместить google test 
-Скачать можно на https://github.com/google/googletest
+Put gtest to this folder. 
+Download gtest https://github.com/google/googletest

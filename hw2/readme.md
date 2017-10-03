@@ -1,3 +1,3 @@
-Реализация Promise and Future для 2 дз по С++.
+Promise and Future for homework2 C++.
 
-С gtest.
+With gtest.
