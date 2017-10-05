@@ -1,8 +1,9 @@
+#pragma once
 //
 // Created by Александр on 20.09.2017.
 //
 
-#include "FutureState.h"
+#include "shared_state.h"
 
 using ulock = std::unique_lock<std::mutex>;
 
@@ -10,18 +11,18 @@ using ulock = std::unique_lock<std::mutex>;
 template<typename T>
 class Future {
 
-    explicit Future(std::shared_ptr<FutureState<T> > state) : state_{state} {
+    explicit Future(std::shared_ptr<FutureState<T> > state) : state_(state) {
 
     }
 
 
 public:
-    Future(Future &&f) : state_(std::move(f.state_)) {
+    Future(Future &&f) noexcept : state_(std::move(f.state_)) {
 
     }
 
-    Future &operator=(Future &&f) {
-        *this = std::move(f);
+    Future &operator=(Future &&f) noexcept {
+        state_ = std::move(f.state_);
         return *this;
     }
 
@@ -31,10 +32,10 @@ public:
 
     T get() const {
         wait();
-        if (state_->except) {
-            std::rethrow_exception(state_->except);
-        } else if (!state_->hasPromise) {
+        if (!state_->hasPromise && !isReady()) {
             throw std::runtime_error("Future hasn't promise");
+        } else if (state_->except) {
+            std::rethrow_exception(state_->except);
         } else
             return std::move(state_->value);
     }
@@ -49,7 +50,7 @@ public:
             return;
         }
         state_->cv.wait(lock, [this]() {
-            return isReady();
+            return isReady() || !state_->hasPromise;
         });
 
     }
@@ -77,7 +78,7 @@ public:
     }
 
     Future &operator=(Future &&f) {
-        *this = std::move(f);
+        state_ = std::move(f.state_);
         return *this;
     }
 
@@ -133,7 +134,7 @@ public:
     }
 
     Future &operator=(Future &&f) {
-        *this = std::move(f);
+        state_ = std::move(f.state_);
         return *this;
     }
 

@@ -1,8 +1,9 @@
+#pragma once
 //
 // Created by Александр on 20.09.2017.
 //
 #include <functional>
-#include "Future.h"
+#include "future.h"
 
 using ulock = std::unique_lock<std::mutex>;
 
@@ -15,10 +16,20 @@ public:
         state_->hasPromise = true;
     }
 
-    Promise(Promise<T> &&promise) : state_(std::move(promise.state_)) {
+    Promise(Promise<T> &&promise) noexcept : state_(std::move(promise.state_)) {
+        futureExist_ = promise.futureExist_ ? true : false;
     }
 
-    Promise &operator=(Promise<T> &&promise) {
+    ~Promise() {
+        if(state_) {
+            state_->hasPromise = false;
+            state_->cv.notify_one();
+        }
+    }
+
+    Promise &operator=(Promise<T> &&promise) noexcept {
+
+        futureExist_ = promise.futureExist_ ? true : false;
         state_ = std::move(promise.state_);
         return *this;
     };
@@ -85,7 +96,7 @@ public:
     Promise(Promise<void> &&promise) : state_(std::move(promise.state_)) {
     }
 
-    Promise &operator=(Promise<void> &&promise) { // incorrect
+    Promise &operator=(Promise<void> &&promise) {
         state_ = std::move(promise.state_);
         return *this;
     };
@@ -123,7 +134,7 @@ public:
 
 private:
     std::shared_ptr<FutureState<void> > state_;
-    bool futureExist_;
+    std::atomic<bool> futureExist_;
 };
 
 template<typename T>
@@ -132,8 +143,7 @@ class Promise<T &> {
 public:
 
     Promise()
-            : state_(std::make_shared<FutureState<T &> >())
-            , futureExist_(false) {
+            : state_(std::make_shared<FutureState<T &> >()), futureExist_(false) {
         state_->hasPromise = true;
     }
 
@@ -181,7 +191,7 @@ public:
 
 private:
     std::shared_ptr<FutureState<T &> > state_;
-    bool futureExist_;
+    std::atomic<bool> futureExist_;
 
 };
 
