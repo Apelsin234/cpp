@@ -5,10 +5,14 @@
 #include <functional>
 #include "future.h"
 
-using ulock = std::unique_lock<std::mutex>;
 
 template<typename T>
 class Promise {
+    void ensureInitialized() const {
+        if (!state_) {
+            throw std::runtime_error("error already set");
+        }
+    }
 
 public:
 
@@ -16,12 +20,13 @@ public:
         state_->hasPromise = true;
     }
 
-    Promise(Promise<T> &&promise) noexcept : state_(std::move(promise.state_)) {
+    Promise(Promise<T> &&promise) noexcept : state_(std::move(promise.state_)),
+                                             futureExist_(promise.futureExist_.load()) {
         futureExist_ = promise.futureExist_ ? true : false;
     }
 
     ~Promise() {
-        if(state_) {
+        if (state_) {
             state_->hasPromise = false;
             state_->cv.notify_one();
         }
@@ -29,7 +34,7 @@ public:
 
     Promise &operator=(Promise<T> &&promise) noexcept {
 
-        futureExist_ = promise.futureExist_ ? true : false;
+        futureExist_ = promise.futureExist_.load();
         state_ = std::move(promise.state_);
         return *this;
     };
@@ -47,7 +52,8 @@ public:
     }
 
     void set(const T &v) {
-        ulock lock(state_->mx);
+        ensureInitialized();
+        std::unique_lock<std::mutex> lock(state_->mx);
         if (state_->isReady) {
             throw std::runtime_error("value already set");
         }
@@ -58,7 +64,8 @@ public:
     }
 
     void set(T &&v) {
-        ulock lock(state_->mx);
+        ensureInitialized();
+        std::unique_lock<std::mutex> lock(state_->mx);
         if (state_->isReady) {
             throw std::runtime_error("value already set");
         }
@@ -68,7 +75,8 @@ public:
     }
 
     void setException(const std::exception_ptr &e) {
-        ulock lock(state_->mx);
+        ensureInitialized();
+        std::unique_lock<std::mutex> lock(state_->mx);
         if (state_->except) {
             throw std::runtime_error("error already set");
         }
@@ -76,7 +84,6 @@ public:
         state_->isReady = true;
         state_->cv.notify_one();
     }
-
 
 private:
     std::shared_ptr<FutureState<T> > state_;
@@ -86,6 +93,12 @@ private:
 
 template<>
 class Promise<void> {
+    void ensureInitialized() const {
+        if (!state_) {
+            throw std::runtime_error("error already set");
+        }
+    }
+
 public:
 
     Promise()
@@ -93,10 +106,19 @@ public:
         state_->hasPromise = true;
     }
 
-    Promise(Promise<void> &&promise) : state_(std::move(promise.state_)) {
+    ~Promise() {
+        if (state_) {
+            state_->hasPromise = false;
+            state_->cv.notify_one();
+        }
     }
 
-    Promise &operator=(Promise<void> &&promise) {
+    Promise(Promise<void> &&promise) noexcept : state_(std::move(promise.state_)),
+                                                futureExist_(promise.futureExist_.load()) {
+    }
+
+    Promise &operator=(Promise<void> &&promise) noexcept {
+        futureExist_ = promise.futureExist_.load();
         state_ = std::move(promise.state_);
         return *this;
     };
@@ -114,6 +136,7 @@ public:
     }
 
     void set() {
+        ensureInitialized();
         if (state_->isReady) {
             throw std::runtime_error("value already set");
         }
@@ -122,7 +145,8 @@ public:
     }
 
     void setException(const std::exception_ptr &e) {
-        ulock lock(state_->mx);
+        ensureInitialized();
+        std::unique_lock<std::mutex> lock(state_->mx);
         if (state_->except) {
             throw std::runtime_error("error already set");
         }
@@ -139,6 +163,11 @@ private:
 
 template<typename T>
 class Promise<T &> {
+    void ensureInitialized() const {
+        if (!state_) {
+            throw std::runtime_error("error already set");
+        }
+    }
 
 public:
 
@@ -147,10 +176,18 @@ public:
         state_->hasPromise = true;
     }
 
-    Promise(Promise &&promise) : state_(std::move(promise.state_)) {
+    ~Promise() {
+        if (state_) {
+            state_->hasPromise = false;
+            state_->cv.notify_one();
+        }
     }
 
-    Promise &operator=(Promise &&promise) {
+    Promise(Promise &&promise) noexcept : state_(std::move(promise.state_)), futureExist_(promise.futureExist_.load()) {
+    }
+
+    Promise &operator=(Promise &&promise) noexcept {
+        futureExist_ = promise.futureExist_.load();
         state_ = std::move(promise.state_);
         return *this;
     };
@@ -168,7 +205,8 @@ public:
     }
 
     void set(T &v) {
-        ulock lock(state_->mx);
+        ensureInitialized();
+        std::unique_lock<std::mutex> lock(state_->mx);
         if (state_->isReady) {
             throw std::runtime_error("value already set");
         }
@@ -179,7 +217,8 @@ public:
     }
 
     void setException(const std::exception_ptr &e) {
-        ulock lock(state_->mx);
+        ensureInitialized();
+        std::unique_lock<std::mutex> lock(state_->mx);
         if (state_->except) {
             throw std::runtime_error("error already set");
         }

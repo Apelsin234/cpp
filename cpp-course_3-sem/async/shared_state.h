@@ -13,7 +13,8 @@ template<typename>
 class Future;
 
 class State {
-protected:
+
+public:
     std::atomic<bool> isReady;
     std::atomic<bool> hasPromise;
     std::exception_ptr except;
@@ -22,7 +23,7 @@ protected:
 };
 
 template<typename T>
-class FutureState : public State {
+class FutureState : private State {
 public:
 
     friend class Promise<T>;
@@ -35,7 +36,7 @@ private:
 };
 
 template<>
-class FutureState<void> : public State {
+class FutureState<void> : private State {
 public:
 
     friend class Promise<void>;
@@ -45,7 +46,7 @@ public:
 };
 
 template<typename T>
-class FutureState<T &> : public State {
+class FutureState<T &> : private State {
 public:
     friend class Promise<T &>;
 
