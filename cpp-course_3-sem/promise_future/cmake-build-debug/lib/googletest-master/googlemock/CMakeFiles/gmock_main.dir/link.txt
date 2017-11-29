@@ -1,0 +1,2 @@
+C:\mingw-w64\x86_64-6.3.0-posix-seh-rt_v5-rev1\mingw64\bin\ar.exe qc libgmock_maind.a  CMakeFiles/gmock_main.dir/__/googletest/src/gtest-all.cc.obj CMakeFiles/gmock_main.dir/src/gmock-all.cc.obj CMakeFiles/gmock_main.dir/src/gmock_main.cc.obj
+C:\mingw-w64\x86_64-6.3.0-posix-seh-rt_v5-rev1\mingw64\bin\ranlib.exe libgmock_maind.a
