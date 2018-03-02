@@ -1,3 +1,0 @@
-"C:\CLion 2016.3.3\bin\cmake\bin\cmake.exe" -E remove -f CMakeFiles\promise_future.dir/objects.a
-C:\mingw-w64\x86_64-6.3.0-posix-seh-rt_v5-rev1\mingw64\bin\ar.exe cr CMakeFiles\promise_future.dir/objects.a @CMakeFiles\promise_future.dir\objects1.rsp
-C:\mingw-w64\x86_64-6.3.0-posix-seh-rt_v5-rev1\mingw64\bin\g++.exe  -g   -Wl,--whole-archive CMakeFiles\promise_future.dir/objects.a -Wl,--no-whole-archive  -o promise_future.exe -Wl,--out-implib,libpromise_future.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\promise_future.dir\linklibs.rsp
